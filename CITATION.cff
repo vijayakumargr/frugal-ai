@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite the paper."
+title: "FRUGAL-AI: A Cost-Aware Adaptive Framework for Reducing LLM Inference Cost"
+type: software
+authors:
+  - given-names: Vijayakumar
+    family-names: Gurusamy Raju
+repository-code: "https://github.com/vijayakumargr/frugal-ai"
+license: MIT
+date-released: "2026-11-13"
+preferred-citation:
+  type: unpublished
+  title: "FRUGAL-AI: A Cost-Aware Adaptive Framework for Reducing LLM Inference Cost"
+  authors:
+    - given-names: Vijayakumar
+      family-names: Gurusamy Raju
+  year: 2026
+  notes: "Preprint"
+  url: "https://github.com/vijayakumargr/frugal-ai"

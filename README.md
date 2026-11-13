@@ -39,6 +39,7 @@ the committed files exactly.
 | `frugal_ai/results_cli/paraphrases.json`, `emb.npz` | Paraphrased questions and cached embeddings used by the cache experiments |
 | `frugal_ai/results_cli/RESULTS.md`, `summary.json` | The results reported in the paper |
 | `first_evaluation/` | The first evaluation and the code that produced it (see below) |
+| `paper/` | The paper as PDF, with its LaTeX source and figures |
 
 The benchmark questions themselves are not redistributed here; step 1 rebuilds
 them from their original sources with a fixed seed.
@@ -87,6 +88,10 @@ the target on the calibration split. On the test split FRUGAL-AI then retained
 97.7% of the reference quality against a 99% target. The tuning rule above
 replaced it. The first results and the simulator that produced them are kept in
 `first_evaluation/` so the change is visible.
+
+## Citing
+
+See `CITATION.cff`, or use the "Cite this repository" button on GitHub.
 
 ## Licence
 
