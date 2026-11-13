@@ -1,5 +1,7 @@
 # FRUGAL-AI
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24202800.svg)](https://doi.org/10.5281/zenodo.24202800)
+
 Code and logged model outputs for the paper *FRUGAL-AI: A Cost-Aware Adaptive
 Framework for Reducing LLM Inference Cost*.
 
@@ -91,7 +93,7 @@ replaced it. The first results and the simulator that produced them are kept in
 
 ## Citing
 
-See `CITATION.cff`, or use the "Cite this repository" button on GitHub.
+See `CITATION.cff`, or use the "Cite this repository" button on GitHub. Version 1.0.0 is archived on Zenodo: https://doi.org/10.5281/zenodo.24202801 (all versions: https://doi.org/10.5281/zenodo.24202800).
 
 ## Licence
 

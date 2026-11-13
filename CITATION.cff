@@ -8,6 +8,8 @@ authors:
 repository-code: "https://github.com/vijayakumargr/frugal-ai"
 license: MIT
 date-released: "2026-11-13"
+version: "1.0.0"
+doi: "10.5281/zenodo.24202801"
 preferred-citation:
   type: unpublished
   title: "FRUGAL-AI: A Cost-Aware Adaptive Framework for Reducing LLM Inference Cost"
