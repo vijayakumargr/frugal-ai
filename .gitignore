@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+frugal_ai/.env
+# rebuilt from the public benchmarks by `python -m frugal_ai.data`
+frugal_ai/data/
+# local run files
+frugal_ai/results_*/cwd/
+frugal_ai/results_*/*.log*
+frugal_ai/results_*/*.backup.jsonl
+frugal_ai/results_mock/
+frugal_ai/results_cli_probe/
+.DS_Store
+.idea/
