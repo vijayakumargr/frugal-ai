@@ -240,7 +240,7 @@ def make(D, P, tau=(NEVER,) * L, cascade=True, starts=None, compress=False, lam=
     EC, EQ = expected(P, tau, cascade)
     return SimpleNamespace(tau=tau, cascade=cascade, valid=valid, lam=lam, fixed=fixed, cache=cache,
                            tau_cache=tau_cache, online=online, eta=eta, rho=rho, eps=eps, budget=budget,
-                           overhead=overhead, OC=OC, OQ=OQ, OL=OL, EC=EC, EQ=EQ)
+                           overhead=overhead, OC=OC, OQ=OQ, OL=OL, EC=EC, EQ=EQ, pre=None)
 
 
 def choose(P, cfg, idx, lam, mu=0.0):
@@ -293,11 +293,16 @@ def simulate(D, P, cfg, stream, rng):
                 hit[t], false_hit[t] = True, src != i
                 qual[t] = D.Q[i, k, v] if src == i else false_hit_quality(D, i, src, k, v)
                 lat[t] = over
-        if not hit[t]:
+        if not hit[t] and cfg.pre is not None:
+            # A policy decided per query ahead of time (cascade routing).
+            cost[t], qual[t], lat[t], fin = (x[i] for x in cfg.pre)
+            v = 0
+        elif not hit[t]:
             a = int(choose(P, cfg, np.array([i]), max(0.0, cfg.lam[i] + dlam), mu)[0])
             k, v = a // 2, a % 2
             # Budget pressure (mu > 0) lowers the acceptance thresholds.
             cost[t], qual[t], lat[t], fin = serve(D, P, cfg, i, k, v, 1 + mu)
+        if not hit[t]:
             lat[t] += over
             served_ref = fin == L and v == 0
             if cfg.cache:
@@ -435,6 +440,68 @@ def router_cands(D, P):
     return cands
 
 
+CR_LAMS = [0.0, 0.5, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 256]
+CR_DRAWS = 64  # Monte Carlo draws for the expected best quality
+
+
+def cascade_routing(D, P, lam, z):
+    """Cascade routing (Dekoninck et al.): at each step, run the set of models that maximizes
+    lam x expected best quality minus cost, re-estimate with the verifier, and return the answer
+    with the highest estimated quality among the models run.
+
+    Quality estimates are the router's before a model runs and the calibrated verifier's after;
+    their uncertainty is a normal with the calibration-split residual spread, sampled by z.
+    Returns per-query cost, quality, latency and the index of the model whose answer is returned.
+    """
+    tr = P.train
+    ante, post = P.qhat[:, :, 0], P.s[:, :, 0].copy()
+    post[:, L] = ante[:, L]  # the largest model has no verifier
+    sd_ante = np.array([np.std(D.Q[tr, k, 0] - ante[tr, k]) for k in range(K)])
+    sd_post = np.array([np.std(D.Q[tr, k, 0] - post[tr, k]) for k in range(K)])
+    ecost = (P.chat[:, :, 0] + np.pad(P.vchat[:, :L, 0], ((0, 0), (0, 1)))) / P.cbar
+    masks = range(1, 2 ** K)
+    members = {m: [k for k in range(K) if m >> k & 1] for m in range(2 ** K)}
+    out = np.zeros(D.n), np.zeros(D.n), np.zeros(D.n), np.zeros(D.n, int)
+    for i in range(D.n):
+        draw_ante = np.clip(ante[i] + sd_ante * z, 0, 1)
+        draw_post = np.clip(post[i] + sd_post * z, 0, 1)
+        ran = 0
+        while True:
+            best, best_val = ran, -np.inf
+            for m in ([ran] if ran else []) + [m for m in masks if m & ran == ran and m != ran]:
+                cols = [draw_post[:, k] if ran >> k & 1 else draw_ante[:, k] for k in members[m]]
+                val = lam * np.max(cols, axis=0).mean() - sum(ecost[i, k] for k in members[m ^ ran])
+                if val > best_val:
+                    best, best_val = m, val
+            if best == ran:
+                break
+            new = members[best ^ ran]
+            out[0][i] += sum(D.C[i, k, 0] + (D.VC[i, k, 0] if k < L else 0) for k in new)
+            out[2][i] += max(D.LAT[i, k, 0] + (D.VL[i, k, 0] if k < L else 0) for k in new)  # run in parallel
+            ran = best
+        fin = max(members[ran], key=lambda k: post[i, k])
+        out[1][i], out[3][i] = D.Q[i, fin, 0], fin
+    return out
+
+
+def cascade_routing_cands(D, P, rng):
+    z = rng.standard_normal((CR_DRAWS, K))
+    cands = []
+    for lam in CR_LAMS:
+        out = cascade_routing(D, P, lam, z)
+        cands.append((out[0], out[1], out))
+    large = (D.C[:, L, 0], D.Q[:, L, 0], D.LAT[:, L, 0], np.full(D.n, L))
+    cands.append((large[0], large[1], large))
+    return cands
+
+
+def precomputed(D, P, out, **kw):
+    """A policy whose per-query outcome is fixed in advance, wrapped for simulate()."""
+    cfg = make(D, P, cascade=False, fixed=np.full(D.n, 2 * L), **kw)
+    cfg.pre = out
+    return cfg
+
+
 def cache_false_hits(D, P, rng):
     """Wrong cache hits on a calibration replay stream, for each candidate threshold."""
     stream = replay_stream(D, P.train, rng)
@@ -475,6 +542,7 @@ def run_seed(D, seed):
     cache_table = cache_false_hits(D, P, rng)
     tau_cache = tune_tau_cache(cache_table, EPS)
     FC, RC, CC = frugal_cands(D, P), router_cands(D, P), cascade_cands(D, P)
+    CRC = cascade_routing_cands(D, P, np.random.default_rng(2000 + seed))
     fixed_large = np.full(D.n, 2 * L)
     large = lambda **kw: make(D, P, cascade=False, fixed=fixed_large, overhead=False, **kw)
     router = lambda theta: make(D, P, cascade=False, fixed=router_only_fixed(D, P, theta))
@@ -492,6 +560,7 @@ def run_seed(D, seed):
             "Compression-only": make(D, P, cascade=False, starts=[L], compress=True, overhead=False),
             "Router-only": router(pick(RC, P.train, ref, eps)),
             "Cascade-only": make(D, P, tau=pick(CC, P.train, ref, eps), starts=[0], overhead=False),
+            "Cascade routing": precomputed(D, P, pick(CRC, P.train, ref, eps)),
             "FRUGAL-AI": frugal(pick(FC, P.train, ref, route_eps(eps)), eps=eps, tau_cache=tc),
             "Router-only (per-workload floors)": router(theta_w(eps)),
             "FRUGAL-AI (per-workload floors)": frugal(pick_per_workload(D, P, FC, route_eps(eps)), eps=eps, tau_cache=tc),
@@ -502,7 +571,7 @@ def run_seed(D, seed):
             for name, cfg in methods_at(eps).items():
                 run = simulate(D, P, cfg, stream, np.random.default_rng(seed))
                 R[f"main_{sname}_{eps}|{name}"] = metrics(D, run, stream, eps=eps)
-                if eps == EPS and sname == "unique" and name.split(" (")[0] in ("FRUGAL-AI", "Router-only"):
+                if eps == EPS and sname == "unique" and name.split(" (")[0] in ("FRUGAL-AI", "Router-only", "Cascade routing"):
                     w = D.W[[s[0] for s in stream]]
                     for wi, wname in enumerate(D.wnames):
                         R[f"workload|{name}|{wname}"] = metrics(D, run, stream, w == wi)
@@ -527,22 +596,24 @@ def run_seed(D, seed):
     t = P.test
     point = lambda c, q: (100 * q[t].mean() / ref[t].mean(), 100 * (1 - c[t].mean() / D.C[t, L, 0].mean()))
     anchors = [(100.0, 0.0), point(D.C[:, 0, 0], D.Q[:, 0, 0])]
-    sweep = {"FRUGAL-AI": [], "Router-only": [], "Cascade-only": []}
+    sweep = {"FRUGAL-AI": [], "Router-only": [], "Cascade-only": [], "Cascade routing": []}
     for eps in SWEEP_EPS:
         tuned = {
-            "FRUGAL-AI": build(D, P, pick(FC, P.train, ref, eps)),
-            "Router-only": router(pick(RC, P.train, ref, eps)),
-            "Cascade-only": make(D, P, tau=pick(CC, P.train, ref, eps), starts=[0]),
+            "FRUGAL-AI": static_eval(D, P, build(D, P, pick(FC, P.train, ref, eps))),
+            "Router-only": static_eval(D, P, router(pick(RC, P.train, ref, eps))),
+            "Cascade-only": static_eval(D, P, make(D, P, tau=pick(CC, P.train, ref, eps), starts=[0])),
+            "Cascade routing": pick(CRC, P.train, ref, eps)[:2],
         }
-        for name, cfg in tuned.items():
-            q_ret, red = point(*static_eval(D, P, cfg))
+        for name, (c, q) in tuned.items():
+            q_ret, red = point(c, q)
             sweep[name].append((q_ret, red))
             R[f"pareto|{name}|{eps}"] = {"cost_red": red, "q_ret": q_ret}
     for level in LEVELS:
         at = {name: at_level(pts + anchors, level) for name, pts in sweep.items()}
         for name, v in at.items():
             R[f"matched|{name}|{level}"] = {"cost_red": v}
-        R[f"matched|FRUGAL-AI minus Router-only|{level}"] = {"cost_red": at["FRUGAL-AI"] - at["Router-only"]}
+        for other in ("Router-only", "Cascade routing"):
+            R[f"matched|FRUGAL-AI minus {other}|{level}"] = {"cost_red": at["FRUGAL-AI"] - at[other]}
 
     # Drift: the share of easy queries falls from 80% to 50% halfway through.
     T, win = 10000, 500
@@ -679,16 +750,17 @@ def report(D, agg, seed_results, args):
     md.append(f"Cost per 1k requests on the replay stream, target {100 * (1 - EPS):.0f}%:\n")
     md.append("| FRUGAL-AI vs. | Mean cost difference (USD / 1k) | Mean quality-retained difference (points) | p-value (cost) |\n| --- | --- | --- | --- |")
     get = lambda name, m: np.array([r[f"main_replay_{EPS}|{name}"][m] for r in seed_results])
-    for name in ("Cache-only", "Compression-only", "Router-only", "Cascade-only"):
+    for name in ("Cache-only", "Compression-only", "Router-only", "Cascade-only", "Cascade routing"):
         dc, dq = get("FRUGAL-AI", "cost_per_1k") - get(name, "cost_per_1k"), get("FRUGAL-AI", "q_ret") - get(name, "q_ret")
         p = stats.ttest_1samp(dc, 0).pvalue if len(dc) > 1 else float("nan")
         md.append(f"| {name} | {dc.mean():+.2f} | {dq.mean():+.1f} | {p:.4f} |")
-    md.append("\nCost reduction at matched quality, FRUGAL-AI minus Router-only (distinct queries):\n")
-    md.append("| Quality retained (%) | Difference (points) | p-value |\n| --- | --- | --- |")
-    for level in LEVELS:
-        d = np.array([r[f"matched|FRUGAL-AI minus Router-only|{level}"]["cost_red"] for r in seed_results])
-        p = stats.ttest_1samp(d, 0).pvalue if len(d) > 1 and d.std() > 0 else float("nan")
-        md.append(f"| {level:g} | {d.mean():+.1f} | {p:.4f} |")
+    for other in ("Router-only", "Cascade routing"):
+        md.append(f"\nCost reduction at matched quality, FRUGAL-AI minus {other} (distinct queries):\n")
+        md.append("| Quality retained (%) | Difference (points) | p-value |\n| --- | --- | --- |")
+        for level in LEVELS:
+            d = np.array([r[f"matched|FRUGAL-AI minus {other}|{level}"]["cost_red"] for r in seed_results])
+            p = stats.ttest_1samp(d, 0).pvalue if len(d) > 1 and d.std() > 0 else float("nan")
+            md.append(f"| {level:g} | {d.mean():+.1f} | {p:.4f} |")
     (D.out / "RESULTS.md").write_text("\n".join(md) + "\n")
     (D.out / "summary.json").write_text(json.dumps(agg, indent=1))
     print("\n".join(md))

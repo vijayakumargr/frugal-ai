@@ -35,7 +35,7 @@ the committed files exactly.
 | --- | --- |
 | `frugal_ai/data.py` | Builds the query set: MMLU-Pro 400, Codeforces (CodeContests) 165, AIME 90, CNN/DailyMail 150, MT-Bench 80 |
 | `frugal_ai/collect.py`, `llm.py` | Calls each model once per query, scores the answers and logs cost and latency |
-| `frugal_ai/simulate.py` | Calibration, baselines, ablations and all reported experiments, over 10 seeds |
+| `frugal_ai/simulate.py` | Calibration, baselines (including cascade routing, Dekoninck et al. 2024), ablations and all reported experiments, over 10 seeds |
 | `frugal_ai/results_cli/outcomes.jsonl` | One row per query, model and prompt variant: quality, cost, latency, verifier confidence |
 | `frugal_ai/results_cli/calls.jsonl` | Every logged model call with the model's answer and token counts |
 | `frugal_ai/results_cli/paraphrases.json`, `emb.npz` | Paraphrased questions and cached embeddings used by the cache experiments |

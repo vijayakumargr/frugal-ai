@@ -28,6 +28,7 @@
 | Compression-only | 22.35 ± 1.88 | 2.1 ± 0.4 | 97.6 ± 0.4 | 40.6 ± 3.0 | 40 |
 | Router-only | 18.19 ± 2.17 | 20.5 ± 4.4 | 98.7 ± 1.2 | 37.3 ± 3.5 | 80 |
 | Cascade-only | 21.41 ± 3.29 | 6.9 ± 9.8 | 98.2 ± 0.9 | 134.8 ± 17.7 | 60 |
+| Cascade routing | 16.02 ± 2.01 | 29.4 ± 9.0 | 99.2 ± 0.9 | 79.1 ± 12.6 | 90 |
 | FRUGAL-AI | 11.20 ± 1.48 | 50.8 ± 5.2 | 98.5 ± 0.7 | 57.6 ± 12.7 | 70 |
 | Router-only (per-workload floors) | 18.59 ± 2.67 | 19.0 ± 7.5 | 99.4 ± 0.5 | 38.5 ± 5.1 | 100 |
 | FRUGAL-AI (per-workload floors) | 13.15 ± 1.57 | 42.2 ± 5.8 | 97.7 ± 0.8 | 65.6 ± 10.3 | 30 |
@@ -42,6 +43,7 @@
 | Compression-only | 23.28 ± 1.71 | 1.8 ± 0.2 | 97.9 ± 0.1 | 42.7 ± 4.5 | 20 |
 | Router-only | 18.73 ± 1.89 | 21.1 ± 4.8 | 98.9 ± 0.6 | 40.1 ± 4.4 | 90 |
 | Cascade-only | 22.29 ± 3.27 | 6.7 ± 8.9 | 98.0 ± 0.5 | 142.6 ± 15.2 | 50 |
+| Cascade routing | 16.38 ± 2.11 | 30.8 ± 8.0 | 99.0 ± 0.5 | 88.9 ± 10.3 | 90 |
 | FRUGAL-AI | 15.71 ± 2.08 | 33.8 ± 7.0 | 98.1 ± 0.5 | 86.7 ± 21.1 | 50 |
 | Router-only (per-workload floors) | 19.29 ± 2.32 | 18.9 ± 6.9 | 99.1 ± 0.4 | 41.5 ± 5.4 | 100 |
 | FRUGAL-AI (per-workload floors) | 18.30 ± 2.14 | 22.8 ± 7.1 | 97.6 ± 0.6 | 91.1 ± 17.3 | 50 |
@@ -56,6 +58,7 @@
 | Compression-only | 22.35 ± 1.88 | 2.1 ± 0.4 | 97.6 ± 0.4 | 40.6 ± 3.0 | 0 |
 | Router-only | 19.38 ± 2.19 | 15.3 ± 4.2 | 99.6 ± 0.3 | 39.3 ± 4.2 | 90 |
 | Cascade-only | 27.93 ± 3.68 | -22.0 ± 10.1 | 99.3 ± 0.4 | 149.8 ± 15.2 | 80 |
+| Cascade routing | 22.64 ± 1.78 | 0.5 ± 4.7 | 99.9 ± 0.3 | 48.7 ± 12.5 | 90 |
 | FRUGAL-AI | 14.75 ± 1.97 | 35.4 ± 5.9 | 99.1 ± 0.7 | 53.8 ± 17.0 | 50 |
 | Router-only (per-workload floors) | 19.83 ± 2.86 | 13.6 ± 8.1 | 99.7 ± 0.3 | 41.1 ± 5.2 | 100 |
 | FRUGAL-AI (per-workload floors) | 15.64 ± 1.88 | 31.5 ± 6.0 | 99.1 ± 0.6 | 69.0 ± 11.6 | 40 |
@@ -70,6 +73,7 @@
 | Compression-only | 23.28 ± 1.71 | 1.8 ± 0.2 | 97.9 ± 0.1 | 42.7 ± 4.5 | 0 |
 | Router-only | 20.04 ± 1.74 | 15.5 ± 3.8 | 99.4 ± 0.2 | 41.9 ± 4.0 | 90 |
 | Cascade-only | 28.90 ± 3.23 | -21.8 ± 10.2 | 99.1 ± 0.5 | 154.9 ± 10.9 | 60 |
+| Cascade routing | 23.85 ± 2.10 | -0.6 ± 5.2 | 99.9 ± 0.1 | 54.0 ± 17.0 | 100 |
 | FRUGAL-AI | 19.65 ± 2.21 | 17.1 ± 6.6 | 98.9 ± 0.4 | 72.8 ± 21.4 | 40 |
 | Router-only (per-workload floors) | 20.59 ± 2.58 | 13.6 ± 7.3 | 99.3 ± 0.4 | 43.4 ± 5.6 | 80 |
 | FRUGAL-AI (per-workload floors) | 20.91 ± 2.39 | 11.9 ± 7.2 | 98.8 ± 0.4 | 93.1 ± 17.7 | 30 |
@@ -83,6 +87,11 @@
 | Router-only · codecontests | 1.5 ± 2.8 | 99.9 ± 0.3 |
 | Router-only · mmlupro | 32.4 ± 10.9 | 99.2 ± 1.0 |
 | Router-only · mtbench | 31.8 ± 10.6 | 98.1 ± 0.8 |
+| Cascade routing · aime | 41.5 ± 12.5 | 98.7 ± 1.1 |
+| Cascade routing · cnndm | -31.8 ± 20.8 | 99.7 ± 0.4 |
+| Cascade routing · codecontests | 42.6 ± 11.6 | 98.1 ± 2.4 |
+| Cascade routing · mmlupro | -33.5 ± 14.3 | 99.7 ± 0.3 |
+| Cascade routing · mtbench | 72.0 ± 9.6 | 96.5 ± 1.6 |
 | FRUGAL-AI · aime | 64.4 ± 16.9 | 97.6 ± 1.4 |
 | FRUGAL-AI · cnndm | 34.5 ± 14.3 | 98.1 ± 1.1 |
 | FRUGAL-AI · codecontests | 14.4 ± 17.6 | 96.6 ± 2.1 |
@@ -117,19 +126,27 @@
 | FRUGAL-AI · 97.0 | 69.5 ± 4.2 |
 | Router-only · 97.0 | 41.0 ± 5.7 |
 | Cascade-only · 97.0 | 31.1 ± 8.2 |
+| Cascade routing · 97.0 | 65.2 ± 6.7 |
 | FRUGAL-AI minus Router-only · 97.0 | 28.5 ± 7.8 |
+| FRUGAL-AI minus Cascade routing · 97.0 | 4.3 ± 7.6 |
 | FRUGAL-AI · 98.0 | 53.5 ± 9.1 |
 | Router-only · 98.0 | 32.4 ± 4.8 |
 | Cascade-only · 98.0 | 12.0 ± 5.9 |
+| Cascade routing · 98.0 | 50.1 ± 7.0 |
 | FRUGAL-AI minus Router-only · 98.0 | 21.1 ± 11.7 |
+| FRUGAL-AI minus Cascade routing · 98.0 | 3.4 ± 12.3 |
 | FRUGAL-AI · 98.5 | 41.1 ± 8.7 |
 | Router-only · 98.5 | 28.8 ± 4.6 |
 | Cascade-only · 98.5 | 7.4 ± 3.9 |
+| Cascade routing · 98.5 | 41.5 ± 7.9 |
 | FRUGAL-AI minus Router-only · 98.5 | 12.3 ± 11.7 |
+| FRUGAL-AI minus Cascade routing · 98.5 | -0.4 ± 10.7 |
 | FRUGAL-AI · 99.0 | 28.9 ± 5.8 |
 | Router-only · 99.0 | 24.7 ± 4.7 |
 | Cascade-only · 99.0 | 4.8 ± 2.7 |
+| Cascade routing · 99.0 | 29.4 ± 7.9 |
 | FRUGAL-AI minus Router-only · 99.0 | 4.2 ± 9.8 |
+| FRUGAL-AI minus Cascade routing · 99.0 | -0.5 ± 11.4 |
 
 ## Cost-quality frontier (distinct queries; method · tolerance)
 
@@ -138,45 +155,59 @@
 | FRUGAL-AI · 0.1 | 91.2 ± 0.6 | 92.8 ± 0.5 |
 | Router-only · 0.1 | 92.3 ± 1.8 | 92.8 ± 0.5 |
 | Cascade-only · 0.1 | 90.7 ± 0.8 | 92.9 ± 0.5 |
+| Cascade routing · 0.1 | 91.1 ± 0.6 | 92.9 ± 0.7 |
 | FRUGAL-AI · 0.08 | 89.1 ± 1.2 | 93.4 ± 0.7 |
 | Router-only · 0.08 | 79.0 ± 7.9 | 94.0 ± 0.8 |
 | Cascade-only · 0.08 | 75.9 ± 3.8 | 93.9 ± 0.4 |
+| Cascade routing · 0.08 | 86.1 ± 2.9 | 94.6 ± 1.0 |
 | FRUGAL-AI · 0.06 | 81.0 ± 2.7 | 95.2 ± 0.5 |
 | Router-only · 0.06 | 59.2 ± 9.3 | 95.6 ± 0.7 |
 | Cascade-only · 0.06 | 64.4 ± 1.6 | 95.3 ± 0.4 |
+| Cascade routing · 0.06 | 77.8 ± 5.3 | 95.9 ± 0.7 |
 | FRUGAL-AI · 0.05 | 76.2 ± 3.4 | 96.1 ± 0.7 |
 | Router-only · 0.05 | 46.3 ± 5.8 | 96.7 ± 0.6 |
 | Cascade-only · 0.05 | 50.2 ± 5.7 | 95.8 ± 0.6 |
+| Cascade routing · 0.05 | 69.4 ± 7.2 | 96.5 ± 0.8 |
 | FRUGAL-AI · 0.04 | 72.7 ± 3.3 | 96.9 ± 0.6 |
 | Router-only · 0.04 | 36.4 ± 6.3 | 97.6 ± 0.8 |
 | Cascade-only · 0.04 | 36.3 ± 5.6 | 96.5 ± 0.7 |
+| Cascade routing · 0.04 | 60.1 ± 5.8 | 97.4 ± 0.7 |
 | FRUGAL-AI · 0.03 | 63.7 ± 5.2 | 97.5 ± 0.4 |
 | Router-only · 0.03 | 27.8 ± 4.7 | 98.5 ± 0.8 |
 | Cascade-only · 0.03 | 21.5 ± 7.3 | 97.1 ± 0.6 |
+| Cascade routing · 0.03 | 42.9 ± 8.0 | 98.5 ± 0.3 |
 | FRUGAL-AI · 0.025 | 51.8 ± 8.6 | 97.9 ± 0.4 |
 | Router-only · 0.025 | 24.5 ± 4.9 | 98.8 ± 0.7 |
 | Cascade-only · 0.025 | 13.2 ± 8.1 | 97.6 ± 0.5 |
+| Cascade routing · 0.025 | 38.2 ± 7.7 | 98.6 ± 0.3 |
 | FRUGAL-AI · 0.02 | 40.2 ± 8.2 | 98.4 ± 0.4 |
 | Router-only · 0.02 | 21.1 ± 4.8 | 98.9 ± 0.6 |
 | Cascade-only · 0.02 | 6.7 ± 8.9 | 98.0 ± 0.5 |
+| Cascade routing · 0.02 | 30.8 ± 8.0 | 99.0 ± 0.5 |
 | FRUGAL-AI · 0.015 | 33.1 ± 7.4 | 98.8 ± 0.5 |
 | Router-only · 0.015 | 17.8 ± 3.2 | 99.3 ± 0.4 |
 | Cascade-only · 0.015 | -3.5 ± 8.6 | 98.3 ± 0.6 |
+| Cascade routing · 0.015 | 19.5 ± 11.0 | 99.2 ± 0.6 |
 | FRUGAL-AI · 0.01 | 25.8 ± 6.7 | 99.1 ± 0.4 |
 | Router-only · 0.01 | 15.5 ± 3.8 | 99.4 ± 0.2 |
 | Cascade-only · 0.01 | -21.8 ± 10.2 | 99.1 ± 0.5 |
+| Cascade routing · 0.01 | -0.6 ± 5.2 | 99.9 ± 0.1 |
 | FRUGAL-AI · 0.0075 | 17.1 ± 6.6 | 99.1 ± 0.5 |
 | Router-only · 0.0075 | 11.8 ± 4.1 | 99.5 ± 0.2 |
 | Cascade-only · 0.0075 | -23.8 ± 10.6 | 99.1 ± 0.5 |
+| Cascade routing · 0.0075 | 1.2 ± 2.8 | 100.0 ± 0.1 |
 | FRUGAL-AI · 0.005 | 10.9 ± 8.4 | 99.5 ± 0.4 |
 | Router-only · 0.005 | 3.7 ± 4.1 | 99.8 ± 0.2 |
 | Cascade-only · 0.005 | -39.6 ± 5.1 | 99.6 ± 0.2 |
+| Cascade routing · 0.005 | 0.0 ± 0.0 | 100.0 ± 0.0 |
 | FRUGAL-AI · 0.0025 | 9.0 ± 8.4 | 99.5 ± 0.4 |
 | Router-only · 0.0025 | 3.6 ± 4.0 | 99.8 ± 0.2 |
 | Cascade-only · 0.0025 | -40.8 ± 5.5 | 99.6 ± 0.2 |
+| Cascade routing · 0.0025 | -11.1 ± 13.0 | 99.9 ± 0.1 |
 | FRUGAL-AI · 0.0 | 5.9 ± 6.6 | 99.5 ± 0.4 |
 | Router-only · 0.0 | 3.5 ± 3.9 | 99.8 ± 0.2 |
 | Cascade-only · 0.0 | -44.9 ± 5.4 | 99.7 ± 0.2 |
+| Cascade routing · 0.0 | -11.1 ± 13.0 | 99.9 ± 0.1 |
 
 ## Sensitivity (replay stream)
 
@@ -242,6 +273,7 @@ Cost per 1k requests on the replay stream, target 98%:
 | Compression-only | -11.15 | +0.9 | 0.0000 |
 | Router-only | -6.99 | -0.2 | 0.0000 |
 | Cascade-only | -10.20 | +0.3 | 0.0001 |
+| Cascade routing | -4.81 | -0.7 | 0.0014 |
 
 Cost reduction at matched quality, FRUGAL-AI minus Router-only (distinct queries):
 
@@ -251,3 +283,12 @@ Cost reduction at matched quality, FRUGAL-AI minus Router-only (distinct queries
 | 98 | +21.1 | 0.0027 |
 | 98.5 | +12.3 | 0.0413 |
 | 99 | +4.2 | 0.3616 |
+
+Cost reduction at matched quality, FRUGAL-AI minus Cascade routing (distinct queries):
+
+| Quality retained (%) | Difference (points) | p-value |
+| --- | --- | --- |
+| 97 | +4.3 | 0.2297 |
+| 98 | +3.4 | 0.5455 |
+| 98.5 | -0.4 | 0.9405 |
+| 99 | -0.5 | 0.9174 |
