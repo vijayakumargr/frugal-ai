@@ -29,6 +29,7 @@
 | Router-only | 18.19 ± 2.17 | 20.5 ± 4.4 | 98.7 ± 1.2 | 37.3 ± 3.5 | 80 |
 | Cascade-only | 21.41 ± 3.29 | 6.9 ± 9.8 | 98.2 ± 0.9 | 134.8 ± 17.7 | 60 |
 | Cascade routing | 16.02 ± 2.01 | 29.4 ± 9.0 | 99.2 ± 0.9 | 79.1 ± 12.6 | 90 |
+| Cascade routing + cache | 13.54 ± 2.05 | 40.5 ± 8.4 | 98.8 ± 0.8 | 59.1 ± 4.8 | 80 |
 | FRUGAL-AI | 11.20 ± 1.48 | 50.8 ± 5.2 | 98.5 ± 0.7 | 57.6 ± 12.7 | 70 |
 | Router-only (per-workload floors) | 18.59 ± 2.67 | 19.0 ± 7.5 | 99.4 ± 0.5 | 38.5 ± 5.1 | 100 |
 | FRUGAL-AI (per-workload floors) | 13.15 ± 1.57 | 42.2 ± 5.8 | 97.7 ± 0.8 | 65.6 ± 10.3 | 30 |
@@ -44,6 +45,7 @@
 | Router-only | 18.73 ± 1.89 | 21.1 ± 4.8 | 98.9 ± 0.6 | 40.1 ± 4.4 | 90 |
 | Cascade-only | 22.29 ± 3.27 | 6.7 ± 8.9 | 98.0 ± 0.5 | 142.6 ± 15.2 | 50 |
 | Cascade routing | 16.38 ± 2.11 | 30.8 ± 8.0 | 99.0 ± 0.5 | 88.9 ± 10.3 | 90 |
+| Cascade routing + cache | 18.92 ± 2.89 | 20.1 ± 11.0 | 98.5 ± 0.7 | 88.9 ± 11.3 | 60 |
 | FRUGAL-AI | 15.71 ± 2.08 | 33.8 ± 7.0 | 98.1 ± 0.5 | 86.7 ± 21.1 | 50 |
 | Router-only (per-workload floors) | 19.29 ± 2.32 | 18.9 ± 6.9 | 99.1 ± 0.4 | 41.5 ± 5.4 | 100 |
 | FRUGAL-AI (per-workload floors) | 18.30 ± 2.14 | 22.8 ± 7.1 | 97.6 ± 0.6 | 91.1 ± 17.3 | 50 |
@@ -59,6 +61,7 @@
 | Router-only | 19.38 ± 2.19 | 15.3 ± 4.2 | 99.6 ± 0.3 | 39.3 ± 4.2 | 90 |
 | Cascade-only | 27.93 ± 3.68 | -22.0 ± 10.1 | 99.3 ± 0.4 | 149.8 ± 15.2 | 80 |
 | Cascade routing | 22.64 ± 1.78 | 0.5 ± 4.7 | 99.9 ± 0.3 | 48.7 ± 12.5 | 90 |
+| Cascade routing + cache | 17.52 ± 1.48 | 23.0 ± 4.2 | 99.8 ± 0.2 | 37.4 ± 6.1 | 100 |
 | FRUGAL-AI | 14.75 ± 1.97 | 35.4 ± 5.9 | 99.1 ± 0.7 | 53.8 ± 17.0 | 50 |
 | Router-only (per-workload floors) | 19.83 ± 2.86 | 13.6 ± 8.1 | 99.7 ± 0.3 | 41.1 ± 5.2 | 100 |
 | FRUGAL-AI (per-workload floors) | 15.64 ± 1.88 | 31.5 ± 6.0 | 99.1 ± 0.6 | 69.0 ± 11.6 | 40 |
@@ -74,6 +77,7 @@
 | Router-only | 20.04 ± 1.74 | 15.5 ± 3.8 | 99.4 ± 0.2 | 41.9 ± 4.0 | 90 |
 | Cascade-only | 28.90 ± 3.23 | -21.8 ± 10.2 | 99.1 ± 0.5 | 154.9 ± 10.9 | 60 |
 | Cascade routing | 23.85 ± 2.10 | -0.6 ± 5.2 | 99.9 ± 0.1 | 54.0 ± 17.0 | 100 |
+| Cascade routing + cache | 23.36 ± 1.71 | 1.4 ± 2.7 | 99.8 ± 0.3 | 48.5 ± 13.3 | 90 |
 | FRUGAL-AI | 19.65 ± 2.21 | 17.1 ± 6.6 | 98.9 ± 0.4 | 72.8 ± 21.4 | 40 |
 | Router-only (per-workload floors) | 20.59 ± 2.58 | 13.6 ± 7.3 | 99.3 ± 0.4 | 43.4 ± 5.6 | 80 |
 | FRUGAL-AI (per-workload floors) | 20.91 ± 2.39 | 11.9 ± 7.2 | 98.8 ± 0.4 | 93.1 ± 17.7 | 30 |
@@ -228,6 +232,89 @@
 | repeat_share=0.3 | 53.6 ± 6.7 | 98.5 ± 0.6 | 28.3 ± 2.3 | 0.63 ± 0.53 |
 | repeat_share=0.5 | 66.9 ± 5.9 | 98.6 ± 0.5 | 47.7 ± 2.6 | 0.45 ± 0.34 |
 
+## Break-even repeat share (replay stream, target 98%; method · repeat share)
+
+| Method | Cost reduction (%) | Quality retained (%) | Cache hit rate (%) | Seeds meeting target (%) |
+| --- | --- | --- | --- | --- |
+| Cache-only · 0% | 0.8 ± 0.6 | 99.3 ± 0.5 | 0.7 ± 0.5 | 100 |
+| Cascade routing · 0% | 30.8 ± 8.0 | 99.0 ± 0.5 | 0.0 ± 0.0 | 90 |
+| Cascade routing + cache · 0% | 20.0 ± 11.0 | 98.5 ± 0.7 | 0.7 ± 0.5 | 70 |
+| FRUGAL-AI · 0% | 33.6 ± 7.2 | 98.1 ± 0.5 | 0.7 ± 0.5 | 50 |
+| Cache-only · 10% | 12.0 ± 4.9 | 99.3 ± 0.4 | 9.7 ± 1.1 | 100 |
+| Cascade routing · 10% | 31.6 ± 7.1 | 99.2 ± 0.6 | 0.0 ± 0.0 | 100 |
+| Cascade routing + cache · 10% | 29.3 ± 9.7 | 98.7 ± 0.8 | 9.7 ± 1.1 | 70 |
+| FRUGAL-AI · 10% | 41.2 ± 7.6 | 98.1 ± 0.5 | 9.7 ± 1.1 | 60 |
+| Cache-only · 20% | 23.5 ± 8.0 | 99.3 ± 0.5 | 18.9 ± 1.7 | 100 |
+| Cascade routing · 20% | 32.3 ± 6.8 | 99.4 ± 0.6 | 0.0 ± 0.0 | 100 |
+| Cascade routing + cache · 20% | 39.0 ± 8.5 | 99.0 ± 0.8 | 18.9 ± 1.7 | 80 |
+| FRUGAL-AI · 20% | 49.0 ± 8.4 | 98.4 ± 0.5 | 18.9 ± 1.7 | 70 |
+| Cache-only · 30% | 34.5 ± 9.5 | 99.4 ± 0.5 | 28.7 ± 1.8 | 100 |
+| Cascade routing · 30% | 33.0 ± 7.1 | 99.5 ± 0.6 | 0.0 ± 0.0 | 100 |
+| Cascade routing + cache · 30% | 48.0 ± 7.8 | 99.1 ± 0.8 | 28.7 ± 1.8 | 90 |
+| FRUGAL-AI · 30% | 56.4 ± 8.3 | 98.4 ± 0.7 | 28.7 ± 1.8 | 70 |
+| Cache-only · 50% | 53.3 ± 8.6 | 99.4 ± 0.4 | 47.8 ± 2.4 | 100 |
+| Cascade routing · 50% | 33.6 ± 8.1 | 99.4 ± 0.6 | 0.0 ± 0.0 | 90 |
+| Cascade routing + cache · 50% | 63.2 ± 6.6 | 99.1 ± 0.7 | 47.8 ± 2.4 | 90 |
+| FRUGAL-AI · 50% | 69.3 ± 6.8 | 98.4 ± 0.8 | 47.8 ± 2.4 | 70 |
+
+## Tuning margin and target misses (replay stream, target 98%; method · margin in SEs)
+
+| Method | Cost reduction (%) | Quality retained (%) | Seeds meeting target (%) |
+| --- | --- | --- | --- |
+| Cascade routing · z=1 | 29.4 ± 9.0 | 99.2 ± 0.9 | 90 |
+| Cascade routing + cache · z=1 | 40.5 ± 8.4 | 98.8 ± 0.8 | 80 |
+| FRUGAL-AI · z=1 | 50.8 ± 5.2 | 98.5 ± 0.7 | 70 |
+| Cascade routing · z=1.5 | 19.6 ± 10.9 | 99.4 ± 0.8 | 100 |
+| Cascade routing + cache · z=1.5 | 28.6 ± 5.9 | 99.1 ± 0.7 | 90 |
+| FRUGAL-AI · z=1.5 | 47.3 ± 6.0 | 98.4 ± 0.9 | 60 |
+| Cascade routing · z=2 | 7.2 ± 9.3 | 99.7 ± 0.5 | 100 |
+| Cascade routing + cache · z=2 | 25.6 ± 5.2 | 99.2 ± 0.5 | 100 |
+| FRUGAL-AI · z=2 | 43.5 ± 6.1 | 98.6 ± 0.8 | 80 |
+
+## Tuning margin and target misses (distinct queries, target 98%; method · margin in SEs)
+
+| Method | Cost reduction (%) | Quality retained (%) | Seeds meeting target (%) |
+| --- | --- | --- | --- |
+| Cascade routing · z=1 | 30.8 ± 8.0 | 99.0 ± 0.5 | 90 |
+| Cascade routing + cache · z=1 | 20.1 ± 11.0 | 98.5 ± 0.7 | 60 |
+| FRUGAL-AI · z=1 | 33.8 ± 7.0 | 98.1 ± 0.5 | 50 |
+| Cascade routing · z=1.5 | 20.2 ± 11.3 | 99.2 ± 0.6 | 90 |
+| Cascade routing + cache · z=1.5 | 3.9 ± 7.7 | 99.0 ± 0.7 | 80 |
+| FRUGAL-AI · z=1.5 | 29.2 ± 7.6 | 98.1 ± 0.7 | 50 |
+| Cascade routing · z=2 | 6.8 ± 10.0 | 99.7 ± 0.4 | 100 |
+| Cascade routing + cache · z=2 | 0.3 ± 5.4 | 99.2 ± 0.5 | 90 |
+| FRUGAL-AI · z=2 | 24.3 ± 7.0 | 98.3 ± 0.5 | 70 |
+
+## Calibration vs. test quality of the chosen setting (distinct queries, no cache, tolerance 0.02)
+
+| Method | Candidate settings | Calibration quality retained (%) | Test quality retained (%) |
+| --- | --- | --- | --- |
+| Router-only | 42 | 98.94 ± 0.15 | 98.88 ± 0.65 |
+| Cascade routing | 18 | 99.15 ± 0.17 | 99.01 ± 0.53 |
+| FRUGAL-AI routing core | 163 | 99.03 ± 0.08 | 98.36 ± 0.39 |
+
+## Latency (replay stream, target 98%)
+
+| Method | Mean latency (s) | p50 latency (s) | p95 latency (s) |
+| --- | --- | --- | --- |
+| Always-large | 12.3 ± 1.0 | 5.5 ± 0.2 | 40.6 ± 3.0 |
+| Cache-only | 9.2 ± 0.7 | 4.0 ± 0.1 | 34.1 ± 3.1 |
+| Router-only | 11.8 ± 1.1 | 4.8 ± 0.3 | 37.3 ± 3.5 |
+| Cascade routing | 21.8 ± 1.7 | 7.3 ± 0.4 | 79.1 ± 12.6 |
+| Cascade routing + cache | 16.4 ± 1.1 | 4.9 ± 0.2 | 59.1 ± 4.8 |
+| FRUGAL-AI | 15.4 ± 2.8 | 4.1 ± 0.2 | 57.6 ± 12.7 |
+
+## Latency (distinct queries, target 98%)
+
+| Method | Mean latency (s) | p50 latency (s) | p95 latency (s) |
+| --- | --- | --- | --- |
+| Always-large | 12.9 ± 0.9 | 5.6 ± 0.1 | 42.7 ± 4.5 |
+| Cache-only | 12.8 ± 0.9 | 5.6 ± 0.1 | 42.5 ± 4.6 |
+| Router-only | 12.3 ± 0.9 | 4.8 ± 0.3 | 40.1 ± 4.4 |
+| Cascade routing | 22.8 ± 1.6 | 7.4 ± 0.3 | 88.9 ± 10.3 |
+| Cascade routing + cache | 23.0 ± 1.5 | 7.0 ± 0.4 | 88.9 ± 11.3 |
+| FRUGAL-AI | 21.6 ± 4.0 | 6.2 ± 0.5 | 86.7 ± 21.1 |
+
 ## Drift: easy share falls from 80% to 50%
 
 | Method · phase | Cost reduction (%) | Quality retained (%) |
@@ -274,6 +361,7 @@ Cost per 1k requests on the replay stream, target 98%:
 | Router-only | -6.99 | -0.2 | 0.0000 |
 | Cascade-only | -10.20 | +0.3 | 0.0001 |
 | Cascade routing | -4.81 | -0.7 | 0.0014 |
+| Cascade routing + cache | -2.33 | -0.3 | 0.0434 |
 
 Cost reduction at matched quality, FRUGAL-AI minus Router-only (distinct queries):
 
@@ -292,3 +380,41 @@ Cost reduction at matched quality, FRUGAL-AI minus Cascade routing (distinct que
 | 98 | +3.4 | 0.5455 |
 | 98.5 | -0.4 | 0.9405 |
 | 99 | -0.5 | 0.9174 |
+
+## Query-level bootstrap with Holm correction
+
+Paired bootstrap over queries (4000 draws), FRUGAL-AI minus each baseline, target 98%. Positive cost difference: FRUGAL-AI saves more. Holm adjusts across the comparisons in each table. Tuning is not redone inside the bootstrap.
+
+
+replay stream (30% repeats):
+
+| FRUGAL-AI vs. | Extra cost reduction (points) [95% CI] | Quality-retained difference (points) [95% CI] | p | Holm p |
+| --- | --- | --- | --- | --- |
+| Cache-only | +24.9 [+19.4, +31.7] | -0.9 [-1.9, +0.2] | 0.0003 | 0.0013 |
+| Router-only | +30.3 [+24.3, +35.8] | -0.2 [-1.7, +1.3] | 0.0003 | 0.0013 |
+| Cascade-only | +44.0 [+37.2, +49.4] | +0.3 [-0.7, +1.4] | 0.0003 | 0.0013 |
+| Cascade routing | +21.4 [+11.6, +31.7] | -0.7 [-1.4, -0.0] | 0.0003 | 0.0013 |
+| Cascade routing + cache | +10.4 [+4.6, +17.1] | -0.3 [-0.9, +0.3] | 0.0005 | 0.0013 |
+
+distinct queries:
+
+| FRUGAL-AI vs. | Extra cost reduction (points) [95% CI] | Quality-retained difference (points) [95% CI] | p | Holm p |
+| --- | --- | --- | --- | --- |
+| Cache-only | +32.8 [+24.9, +41.8] | -1.2 [-2.1, -0.2] | 0.0003 | 0.0013 |
+| Router-only | +12.7 [+6.3, +19.5] | -0.8 [-2.0, +0.5] | 0.0005 | 0.0015 |
+| Cascade-only | +27.1 [+22.5, +31.1] | +0.1 [-0.9, +1.2] | 0.0003 | 0.0013 |
+| Cascade routing | +3.0 [-7.7, +14.9] | -0.9 [-1.6, -0.2] | 0.5035 | 0.5035 |
+| Cascade routing + cache | +13.7 [+5.2, +22.9] | -0.4 [-1.0, +0.2] | 0.0020 | 0.0040 |
+
+Matched-quality comparisons above, Holm-adjusted across the 8 tests (2 baselines x 4 levels):
+
+| Comparison | Quality retained (%) | t-test p | Holm p |
+| --- | --- | --- | --- |
+| FRUGAL-AI minus Router-only | 97 | 0.0000 | 0.0001 |
+| FRUGAL-AI minus Router-only | 98 | 0.0027 | 0.0192 |
+| FRUGAL-AI minus Router-only | 98.5 | 0.0413 | 0.2477 |
+| FRUGAL-AI minus Router-only | 99 | 0.3616 | 1.0000 |
+| FRUGAL-AI minus Cascade routing | 97 | 0.2297 | 1.0000 |
+| FRUGAL-AI minus Cascade routing | 98 | 0.5455 | 1.0000 |
+| FRUGAL-AI minus Cascade routing | 98.5 | 0.9405 | 1.0000 |
+| FRUGAL-AI minus Cascade routing | 99 | 0.9174 | 1.0000 |

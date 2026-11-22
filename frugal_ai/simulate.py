@@ -26,6 +26,11 @@ SWEEP_EPS = [0.10, 0.08, 0.06, 0.05, 0.04, 0.03, 0.025, 0.02, 0.015, 0.01, 0.007
 LEVELS = [97.0, 98.0, 98.5, 99.0]  # quality-retained levels for the matched-quality comparison
 RHO, ETA, ETA_MU = 0.02, 0.05, 0.05  # audit rate, dual step sizes
 REPEAT_SHARE = 0.30  # share of repeated requests in the replay stream
+REPEAT_SHARES = (0.0, 0.1, 0.2, 0.3, 0.5)  # repeat shares in the break-even sweep
+MARGINS = (1.0, 1.5, 2.0)  # tuning margins (standard errors) in the target-miss analysis
+BOOT = 4000  # query-level bootstrap draws
+BOOT_VS = ("Cache-only", "Router-only", "Cascade-only", "Cascade routing", "Cascade routing + cache")
+LAT_METHODS = ("Always-large", "Cache-only", "Router-only", "Cascade routing", "Cascade routing + cache", "FRUGAL-AI")
 ALPHAS = [0.003, 0.005, 0.01, 0.015, 0.02, 0.03, 0.05, 0.08, 0.12]
 LAMS = [0.0, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32, 64, 128]
 TAU_GRID = np.round(np.arange(0.0, 1.011, 0.01), 2)
@@ -329,6 +334,8 @@ def metrics(D, run, stream, sel=None, eps=None):
         "cost_red": 100 * (1 - run.cost[sel].mean() / ref_c),
         "q_ret": 100 * run.qual[sel].mean() / ref_q,
         "p95_lat": float(np.percentile(run.lat[sel], 95)),
+        "mean_lat": float(run.lat[sel].mean()),
+        "p50_lat": float(np.percentile(run.lat[sel], 50)),
         "hit_rate": 100 * run.hit[sel].mean(),
         "false_hit_rate": 100 * run.false_hit[sel].mean(),
     }
@@ -363,7 +370,11 @@ def drift_stream(D, idx, rng, T, shares=(0.8, 0.5)):
 # ---------------------------------------------------------------- tuning (train split only)
 
 def pick(cands, idx, ref, eps, z=Z_MARGIN):
-    """Walk the calibration cost-quality front from the safest setting towards cheaper ones.
+    return cands[pick_j(cands, idx, ref, eps, z)][2]
+
+
+def pick_j(cands, idx, ref, eps, z=Z_MARGIN):
+    """Index of the chosen candidate. Walk the calibration cost-quality front from the safest setting towards cheaper ones.
 
     A setting is accepted while its quality on idx clears the target by z standard
     errors; the walk stops at the first failure, so a cheap setting that passes by
@@ -381,7 +392,7 @@ def pick(cands, idx, ref, eps, z=Z_MARGIN):
         if d.mean() - z * d.std(ddof=1) / np.sqrt(len(idx)) < 0:
             break
         chosen = j
-    return cands[chosen][2]
+    return chosen
 
 
 def pick_per_workload(D, P, cands, eps):
@@ -561,6 +572,7 @@ def run_seed(D, seed):
             "Router-only": router(pick(RC, P.train, ref, eps)),
             "Cascade-only": make(D, P, tau=pick(CC, P.train, ref, eps), starts=[0], overhead=False),
             "Cascade routing": precomputed(D, P, pick(CRC, P.train, ref, eps)),
+            "Cascade routing + cache": precomputed(D, P, pick(CRC, P.train, ref, route_eps(eps)), cache=True, tau_cache=tc),
             "FRUGAL-AI": frugal(pick(FC, P.train, ref, route_eps(eps)), eps=eps, tau_cache=tc),
             "Router-only (per-workload floors)": router(theta_w(eps)),
             "FRUGAL-AI (per-workload floors)": frugal(pick_per_workload(D, P, FC, route_eps(eps)), eps=eps, tau_cache=tc),
@@ -571,6 +583,8 @@ def run_seed(D, seed):
             for name, cfg in methods_at(eps).items():
                 run = simulate(D, P, cfg, stream, np.random.default_rng(seed))
                 R[f"main_{sname}_{eps}|{name}"] = metrics(D, run, stream, eps=eps)
+                if eps == EPS and (name == "FRUGAL-AI" or name in BOOT_VS or name == "Always-large"):
+                    R[f"_raw|{sname}|{name}"] = (np.array([s[0] for s in stream]), run.cost, run.qual)
                 if eps == EPS and sname == "unique" and name.split(" (")[0] in ("FRUGAL-AI", "Router-only", "Cascade routing"):
                     w = D.W[[s[0] for s in stream]]
                     for wi, wname in enumerate(D.wnames):
@@ -648,6 +662,31 @@ def run_seed(D, seed):
         if seed == 0:
             R[f"trace|budget {name}"] = {"spend_vs_budget": (100 * wc).tolist()}
 
+    # Break-even: cost reduction as the share of repeated requests grows.
+    tc0 = tune_tau_cache(cache_table, EPS)
+    for share in REPEAT_SHARES:
+        stream = replay_stream(D, P.test, np.random.default_rng(3000 + seed), share)
+        for name in ("Cache-only", "Cascade routing", "Cascade routing + cache", "FRUGAL-AI"):
+            run = simulate(D, P, methods[name], stream, np.random.default_rng(seed))
+            R[f"repeat|{name}|{100 * share:.0f}%"] = metrics(D, run, stream, eps=EPS)
+
+    # Target misses: tighter tuning margins, and calibration-vs-test quality of the chosen setting.
+    for z in MARGINS:
+        zc = {
+            "Cascade routing": precomputed(D, P, pick(CRC, P.train, ref, EPS, z)),
+            "Cascade routing + cache": precomputed(D, P, pick(CRC, P.train, ref, route_eps(EPS), z), cache=True, tau_cache=tc0),
+            "FRUGAL-AI": frugal(pick(FC, P.train, ref, route_eps(EPS), z), eps=EPS, tau_cache=tc0),
+        }
+        for sname, stream in streams.items():
+            for name, cfg in zc.items():
+                run = simulate(D, P, cfg, stream, np.random.default_rng(seed))
+                R[f"margin_{sname}|{name}|z={z:g}"] = metrics(D, run, stream, eps=EPS)
+    qr = lambda q, idx: 100 * q[idx].mean() / ref[idx].mean()
+    for name, cands in (("Router-only", RC), ("Cascade routing", CRC), ("FRUGAL-AI routing core", FC)):
+        j = pick_j(cands, P.train, ref, EPS)
+        R[f"gap|{name}"] = {"n_cands": len(cands), "cal_q_ret": qr(cands[j][1], P.train),
+                            "test_q_ret": qr(cands[j][1], P.test)}
+
     # Sensitivity on the replay stream.
     sens = {f"tau_cache={t}": frugal(fz, tau_cache=t) for t in (0.80, 0.85, 0.90, 0.95)}
     sens |= {f"online controller, rho={r}": frugal(fz, online=True, rho=r) for r in (0.005, 0.02, 0.05)}
@@ -676,6 +715,8 @@ def run_seed(D, seed):
 def aggregate(seed_results):
     out = {}
     for key in seed_results[0]:
+        if key.startswith("_"):
+            continue
         if key.startswith("trace|"):
             out[key] = seed_results[0][key]
             continue
@@ -703,6 +744,43 @@ MAIN_COLS = [("cost_per_1k", "Cost (USD / 1k requests)", ".2f"), ("cost_red", "C
              ("q_ret", "Quality retained (%)", ".1f"), ("p95_lat", "p95 latency (s)", ".1f")]
 MET = ("met", "Seeds meeting target (%)", ".0f", False)
 CACHE_COLS = MAIN_COLS[1:3] + [("hit_rate", "Cache hit rate (%)", ".1f"), ("false_hit_rate", "False-hit rate (%)", ".2f")]
+
+
+def holm(p):
+    """Holm-adjusted p-values."""
+    p = np.asarray(p, float)
+    order, adj, run = np.argsort(p), np.empty(len(p)), 0.0
+    for r, j in enumerate(order):
+        run = max(run, min(1.0, (len(p) - r) * p[j]))
+        adj[j] = run
+    return adj
+
+
+def bootstrap(D, seed_results, sname, B=BOOT):
+    """Paired query-level bootstrap of FRUGAL-AI minus each baseline.
+
+    Queries are resampled once per draw and the same weights apply in every seed, so the
+    repeats of a query and its appearances across seeds stay together. Tuning is not redone
+    inside the bootstrap; seed-to-seed tuning variation is in the seed CIs.
+    """
+    W = np.random.default_rng(7).multinomial(D.n, np.full(D.n, 1 / D.n), size=B).astype(float)
+    W = np.vstack([np.ones(D.n), W])  # row 0: the point estimate
+    sums = lambda ids, x: np.bincount(ids, weights=x, minlength=D.n)
+    out = {}
+    for other in BOOT_VS:
+        dc, dq = [], []
+        for r in seed_results:
+            ids, cF, qF = r[f"_raw|{sname}|FRUGAL-AI"]
+            ids2, cO, qO = r[f"_raw|{sname}|{other}"]
+            assert (ids == ids2).all()
+            cref, qref = W @ sums(ids, D.C[ids, L, 0]), W @ sums(ids, D.Q[ids, L, 0])
+            dc.append(100 * (W @ sums(ids, cO) - W @ sums(ids, cF)) / cref)
+            dq.append(100 * (W @ sums(ids, qF) - W @ sums(ids, qO)) / qref)
+        dc, dq = np.mean(dc, 0), np.mean(dq, 0)
+        p = 2 * min(np.mean(dc[1:] <= 0), np.mean(dc[1:] >= 0))
+        out[other] = (dc[0], *np.percentile(dc[1:], [2.5, 97.5]), dq[0], *np.percentile(dq[1:], [2.5, 97.5]), max(p, 1 / B))
+    adj = holm([v[-1] for v in out.values()])
+    return {k: v + (a,) for (k, v), a in zip(out.items(), adj)}
 
 
 def report(D, agg, seed_results, args):
@@ -735,6 +813,18 @@ def report(D, agg, seed_results, args):
     ]
     for title, prefix, cols, first in sections:
         md += [f"\n## {title}\n", table(agg, prefix, cols, first)]
+    md.append(f"\n## Break-even repeat share (replay stream, target {100 * (1 - EPS):.0f}%; method · repeat share)\n")
+    md.append(table(agg, "repeat", MAIN_COLS[1:3] + [CACHE_COLS[2], MET], "Method"))
+    for sname, title in (("replay", "replay stream"), ("unique", "distinct queries")):
+        md.append(f"\n## Tuning margin and target misses ({title}, target {100 * (1 - EPS):.0f}%; method · margin in SEs)\n")
+        md.append(table(agg, f"margin_{sname}", MAIN_COLS[1:3] + [MET], "Method"))
+    md.append(f"\n## Calibration vs. test quality of the chosen setting (distinct queries, no cache, tolerance {EPS:g})\n")
+    md.append(table(agg, "gap", [("n_cands", "Candidate settings", ".0f", False), ("cal_q_ret", "Calibration quality retained (%)", ".2f"),
+                                  ("test_q_ret", "Test quality retained (%)", ".2f")], "Method"))
+    lat_cols = [("mean_lat", "Mean latency (s)", ".1f"), ("p50_lat", "p50 latency (s)", ".1f"), ("p95_lat", "p95 latency (s)", ".1f")]
+    for sname, title in (("replay", "replay stream"), ("unique", "distinct queries")):
+        sub = {k: v for k, v in agg.items() if k.startswith(f"main_{sname}_{EPS}|") and k.split("|")[1] in LAT_METHODS}
+        md += [f"\n## Latency ({title}, target {100 * (1 - EPS):.0f}%)\n", table(sub, f"main_{sname}_{EPS}", lat_cols, "Method")]
     md.append("\n## Drift: easy share falls from 80% to 50%\n")
     md.append(table({k: v for k, v in agg.items() if not k.endswith("windows")}, "drift", MAIN_COLS[1:3], "Method · phase"))
     md.append("")
@@ -750,7 +840,7 @@ def report(D, agg, seed_results, args):
     md.append(f"Cost per 1k requests on the replay stream, target {100 * (1 - EPS):.0f}%:\n")
     md.append("| FRUGAL-AI vs. | Mean cost difference (USD / 1k) | Mean quality-retained difference (points) | p-value (cost) |\n| --- | --- | --- | --- |")
     get = lambda name, m: np.array([r[f"main_replay_{EPS}|{name}"][m] for r in seed_results])
-    for name in ("Cache-only", "Compression-only", "Router-only", "Cascade-only", "Cascade routing"):
+    for name in ("Cache-only", "Compression-only", "Router-only", "Cascade-only", "Cascade routing", "Cascade routing + cache"):
         dc, dq = get("FRUGAL-AI", "cost_per_1k") - get(name, "cost_per_1k"), get("FRUGAL-AI", "q_ret") - get(name, "q_ret")
         p = stats.ttest_1samp(dc, 0).pvalue if len(dc) > 1 else float("nan")
         md.append(f"| {name} | {dc.mean():+.2f} | {dq.mean():+.1f} | {p:.4f} |")
@@ -761,6 +851,24 @@ def report(D, agg, seed_results, args):
             d = np.array([r[f"matched|FRUGAL-AI minus {other}|{level}"]["cost_red"] for r in seed_results])
             p = stats.ttest_1samp(d, 0).pvalue if len(d) > 1 and d.std() > 0 else float("nan")
             md.append(f"| {level:g} | {d.mean():+.1f} | {p:.4f} |")
+    md.append("\n## Query-level bootstrap with Holm correction\n")
+    md.append(f"Paired bootstrap over queries ({BOOT} draws), FRUGAL-AI minus each baseline, target "
+              f"{100 * (1 - EPS):.0f}%. Positive cost difference: FRUGAL-AI saves more. Holm adjusts across the "
+              "comparisons in each table. Tuning is not redone inside the bootstrap.\n")
+    for sname, title in (("replay", f"replay stream ({100 * REPEAT_SHARE:.0f}% repeats)"), ("unique", "distinct queries")):
+        md.append(f"\n{title}:\n")
+        md.append("| FRUGAL-AI vs. | Extra cost reduction (points) [95% CI] | Quality-retained difference (points) [95% CI] | p | Holm p |\n| --- | --- | --- | --- | --- |")
+        for other, (c, cl, ch, q, ql, qh, p, a) in bootstrap(D, seed_results, sname).items():
+            md.append(f"| {other} | {c:+.1f} [{cl:+.1f}, {ch:+.1f}] | {q:+.1f} [{ql:+.1f}, {qh:+.1f}] | {p:.4f} | {a:.4f} |")
+    md.append("\nMatched-quality comparisons above, Holm-adjusted across the 8 tests (2 baselines x 4 levels):\n")
+    md.append("| Comparison | Quality retained (%) | t-test p | Holm p |\n| --- | --- | --- | --- |")
+    rows = []
+    for other in ("Router-only", "Cascade routing"):
+        for level in LEVELS:
+            d = np.array([r[f"matched|FRUGAL-AI minus {other}|{level}"]["cost_red"] for r in seed_results])
+            rows.append((other, level, stats.ttest_1samp(d, 0).pvalue if d.std() > 0 else 1.0))
+    for (other, level, p), a in zip(rows, holm([r[2] for r in rows])):
+        md.append(f"| FRUGAL-AI minus {other} | {level:g} | {p:.4f} | {a:.4f} |")
     (D.out / "RESULTS.md").write_text("\n".join(md) + "\n")
     (D.out / "summary.json").write_text(json.dumps(agg, indent=1))
     print("\n".join(md))

@@ -120,17 +120,22 @@ quality, on a stream with 30\% repeated requests, FRUGAL-AI cuts cost by
 50.8\% (± 5.2) and retains 98.5\% of quality, against 20.5\% for routing
 alone and 25.9\% for caching alone. At matched quality on distinct
 queries it saves 21 points more than routing alone at 98\% quality
-retained (p = 0.003) and 12 points more at 98.5\% (p = 0.04); at 99\%
-the two are statistically tied. We also report what did not work: prompt
-compression was never worth its quality loss, an online quality
-controller fed by a 2\% audit sample gave no gain over the calibrated
-settings, a cascade without a router saved almost nothing, and
-per-workload quality floors could not be calibrated reliably for the
-full pipeline from 40 to 200 queries per workload. The online budget
-multiplier cut the share of windows over budget after a traffic shift
-from 86\% to 9\%, at a cost of about 4 points of quality. The code, the
-logged model outputs and the evaluation protocol are available at
-https://github.com/vijayakumargr/frugal-ai.
+retained (p = 0.003) and 12 points more at 98.5\% (p = 0.04, not
+significant after Holm correction); at 99\% the two are statistically
+tied. Against cascade routing, a 2024 method that unifies routing and
+cascading, FRUGAL-AI is statistically tied at matched quality on
+distinct queries. Given the same semantic cache, cascade routing saves
+40.5\% on the repeated stream, and FRUGAL-AI saves 10.4 points more
+(query-level bootstrap 95\% CI 4.6 to 17.1) at 0.3 points lower quality.
+We also report what did not work: prompt compression was never worth its
+quality loss, an online quality controller fed by a 2\% audit sample
+gave no gain over the calibrated settings, a cascade without a router
+saved almost nothing, and per-workload quality floors could not be
+calibrated reliably for the full pipeline from 40 to 200 queries per
+workload. The online budget multiplier cut the share of windows over
+budget after a traffic shift from 86\% to 9\%, at a cost of about 4
+points of quality. The code, the logged model outputs and the evaluation
+protocol are available at https://github.com/vijayakumargr/frugal-ai.
 
 \textbf{Keywords:} large language models; inference cost optimization;
 model routing; model cascades; semantic caching; prompt compression;
@@ -191,9 +196,11 @@ levels.
   minimization, with a primal-dual controller whose budget multiplier we
   show to hold spend under a traffic shift.
 \item
-  A controlled evaluation on logged outputs of three models, in which
-  every method is scored on identical answers and compared both at a
-  common target and at matched achieved quality.
+  A controlled evaluation on logged outputs of three models, against
+  baselines that include cascade routing {[}34{]} with and without the
+  same semantic cache, in which every method is scored on identical
+  answers and compared both at a common target and at matched achieved
+  quality.
 \item
   Negative results reported in full: prompt compression, an audit-driven
   online quality controller and per-workload quality floors did not pay
@@ -235,7 +242,8 @@ and cascading in one decision rule. Conformal Cascade {[}35{]} and C3PO
 cascade cost. These works control one component, the router or the
 cascade; none calibrates a semantic cache together with them, and none
 reports whether the calibrated quality target is met on held-out traffic
-for a full pipeline. We did not implement them as baselines (Section 8).
+for a full pipeline. We implement cascade routing {[}34{]} as a baseline
+(Section 6.3); the other systems are not implemented (Section 8).
 
 \textbf{Caching.} GPTCache {[}5{]} reuses answers for semantically
 similar queries using embedding search. Key-value cache reuse and paged
@@ -687,14 +695,31 @@ failures.
 \item
   \textbf{Cascade-only:} FrugalGPT/AutoMix-style cascade with fixed
   thresholds {[}1{]}, {[}4{]}.
+\item
+  \textbf{Cascade routing:} our implementation of the method of
+  Dekoninck et al.~{[}34{]} on the same logged outputs. At each step it
+  runs the set of models that maximizes λ times the expected best
+  quality minus the expected cost, using the router's quality estimates
+  before a model runs and the calibrated verifier's estimate after it,
+  each with a normally distributed error whose spread is measured on the
+  calibration split. It returns the answer with the highest estimated
+  quality among the models it ran, and models chosen in the same step
+  run in parallel. It has no cache.
+\item
+  \textbf{Cascade routing + cache:} the same method behind FRUGAL-AI's
+  semantic cache, with the same similarity threshold and the same
+  quarter of the tolerance reserved for wrong cache hits. It isolates
+  what the cache adds, so that FRUGAL-AI is not compared with a baseline
+  that lacks one of its components.
 \end{enumerate}
 
-Router-only, cascade-only and cache-only are tuned with the same
-calibration rule and margin as FRUGAL-AI. We also report two variants
-that calibrate one setting per workload, so that each workload must meet
-the target on its own: Router-only with per-workload floors and
-FRUGAL-AI with per-workload floors. The 2026 systems discussed in
-Section 2 are not implemented.
+Router-only, cascade-only, cache-only and cascade routing are tuned with
+the same calibration rule and margin as FRUGAL-AI; for cascade routing
+the rule chooses λ. We also report two variants that calibrate one
+setting per workload, so that each workload must meet the target on its
+own: Router-only with per-workload floors and FRUGAL-AI with
+per-workload floors. Of the other systems discussed in Section 2, none
+is implemented.
 
 \subsubsection{6.4 Metrics}\label{metrics}
 
@@ -735,8 +760,14 @@ cross-fitting. All model outputs are logged once and replayed, so every
 method is scored on identical outputs. Every result is the mean over 10
 seeds with 95\% confidence intervals; a seed redraws the split, the
 request stream and the audit sample, not the model outputs. Significance
-uses paired t-tests across seeds. The main target is \(q^{*}\) = 0.98 ×
-always-large (ε = 0.02); we also report ε = 0.01.
+uses paired t-tests across seeds. Because the seeds reuse one set of
+model outputs, we also report a paired bootstrap over queries (4,000
+draws, with the same query weights applied in every seed, so a query's
+repeats and its appearances across seeds stay together) and a Holm
+correction across the comparisons in each table. The bootstrap does not
+redo tuning; tuning variation is captured only by the spread across
+seeds. The main target is \(q^{*}\) = 0.98 × always-large (ε = 0.02); we
+also report ε = 0.01.
 
 Disclosure. A first evaluation tuned every method by taking the cheapest
 setting that met the target on the calibration split, at ε = 0.01 and
@@ -757,9 +788,12 @@ share of easy queries falls from 80\% to 50\% mid-stream.
 At a 98\% quality target FRUGAL-AI saves about half the cost of always
 calling the large model, roughly twice the saving of routing or caching
 alone at similar quality; at a 99\% target its advantage over routing
-shrinks to within the noise. On all 885 queries the three models score
-0.824 (small), 0.856 (mid) and 0.891 (large), at 1.53, 10.71 and 22.84
-US dollars per 1,000 requests. All intervals are 95\% confidence
+shrinks to within the noise. Against cascade routing it is tied at
+matched quality on distinct queries. Given the same cache, cascade
+routing closes about half the gap on repeated traffic, and FRUGAL-AI
+keeps a lead of about 10 points. On all 885 queries the three models
+score 0.824 (small), 0.856 (mid) and 0.891 (large), at 1.53, 10.71 and
+22.84 US dollars per 1,000 requests. All intervals are 95\% confidence
 intervals over 10 seeds. Each test split holds about 440 queries, so
 differences under about 1 point of quality are not resolved.
 
@@ -804,6 +838,10 @@ Router-only & 18.19~±~2.17 & 20.5~±~4.4 & 98.7~±~1.2 & 37.3~±~3.5 &
 80 \\
 Cascade-only & 21.41~±~3.29 & 6.9~±~9.8 & 98.2~±~0.9 & 134.8~±~17.7 &
 60 \\
+Cascade routing {[}34{]} & 16.02~±~2.01 & 29.4~±~9.0 & 99.2~±~0.9 &
+79.1~±~12.6 & 90 \\
+Cascade routing {[}34{]} + cache & 13.54~±~2.05 & 40.5~±~8.4 &
+98.8~±~0.8 & 59.1~±~4.8 & 80 \\
 FRUGAL-AI & 11.20~±~1.48 & 50.8~±~5.2 & 98.5~±~0.7 & 57.6~±~12.7 & 70 \\
 Router-only, per-workload floors & 18.59~±~2.67 & 19.0~±~7.5 &
 99.4~±~0.5 & 38.5~±~5.1 & 100 \\
@@ -817,10 +855,24 @@ FRUGAL-AI costs 5.67 US dollars per 1,000 requests less than cache-only,
 t-tests across seeds, p ≤ 0.0001 each). Its mean quality retained,
 98.5\%, is above the target and within 0.2 points of router-only, but it
 meets the target in 7 of 10 seeds against 8 of 10 for router-only. The
-price is latency: verifier calls and escalations raise p95 latency from
-40.6 s to 57.6 s. Cascade-only saves little and more than triples p95
-latency, because every answer from a cheaper model also pays for a
-verifier call.
+price is tail latency. The median request is faster than under
+always-large (4.1 s against 5.5 s), because cache hits and small-model
+answers return quickly, but mean latency rises from 12.3 s to 15.4 s and
+p95 latency from 40.6 s to 57.6 s, because an escalated request waits
+for a verifier call and then a second model. Cascade routing has the
+same tail, with a p95 of 79.1 s without the cache and 59.1 s with it.
+Cascade-only saves little and more than triples p95 latency, because
+every answer from a cheaper model also pays for a verifier call. Cascade
+routing is the strongest baseline: it saves 29.4\% at 99.2\% quality and
+meets the target in 9 of 10 seeds. FRUGAL-AI costs 4.81 US dollars per
+1,000 requests less (p = 0.001) but retains 0.7 points less quality, so
+this comparison is not at equal quality either. Adding the same cache to
+cascade routing raises its saving to 40.5\% at 98.8\% quality. FRUGAL-AI
+still costs 2.33 US dollars per 1,000 requests less (paired t-test
+across seeds, p = 0.04; query-level bootstrap, 10.4 points more cost
+reduction, 95\% CI 4.6 to 17.1, Holm-adjusted p = 0.001), and retains
+0.3 points less quality, a difference within the noise (95\% CI −0.9 to
++0.3).
 
 Table 3. Distinct queries only (no repeats, so the cache can only do
 harm), target 98\%.
@@ -851,6 +903,9 @@ Seeds meeting target (\%)
 Cache-only & 0.9~±~0.7 & 99.3~±~0.5 & 42.5~±~4.6 & 90 \\
 Router-only & 21.1~±~4.8 & 98.9~±~0.6 & 40.1~±~4.4 & 90 \\
 Cascade-only & 6.7~±~8.9 & 98.0~±~0.5 & 142.6~±~15.2 & 50 \\
+Cascade routing {[}34{]} & 30.8~±~8.0 & 99.0~±~0.5 & 88.9~±~10.3 & 90 \\
+Cascade routing {[}34{]} + cache & 20.1~±~11.0 & 98.5~±~0.7 &
+88.9~±~11.3 & 60 \\
 FRUGAL-AI & 33.8~±~7.0 & 98.1~±~0.5 & 86.7~±~21.1 & 50 \\
 Router-only, per-workload floors & 18.9~±~6.9 & 99.1~±~0.4 & 41.5~±~5.4
 & 100 \\
@@ -861,16 +916,29 @@ FRUGAL-AI, per-workload floors & 22.8~±~7.1 & 97.6~±~0.6 & 91.1~±~17.3 &
 
 Without repeats FRUGAL-AI still saves 12.7 points more than router-only,
 but it sits 0.8 points lower in quality and meets the target in only
-half the seeds, so this comparison is not at equal quality. Table 5 and
-Figure 2 make the comparison at matched quality.
+half the seeds, so this comparison is not at equal quality. Without
+repeats the cache can only cost: cascade routing + cache saves 20.1\%
+against 30.8\% for cascade routing alone, because a quarter of the
+tolerance is held back for wrong hits that never come, and FRUGAL-AI
+pays the same price. Table 5 and Figure 2 make the comparison at matched
+quality.
 
 Table 4. Stricter target, \(q^{*}\) = 0.99 × always-large. Each cell is
 cost reduction (\%) / quality retained (\%) / seeds meeting target (\%).
 
 {\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}lll@{}}
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3684}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3158}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3158}}@{}}
 \toprule\noalign{}
-Method & Replay stream & Distinct queries \\
+\begin{minipage}[b]{\linewidth}\raggedright
+Method
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Replay stream
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Distinct queries
+\end{minipage} \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
@@ -878,6 +946,10 @@ Method & Replay stream & Distinct queries \\
 Cache-only & 22.0~±~3.1 / 99.8 / 100 & 0.2~±~0.3 / 99.8 / 90 \\
 Router-only & 15.3~±~4.2 / 99.6 / 90 & 15.5~±~3.8 / 99.4 / 90 \\
 Cascade-only & −22.0~±~10.1 / 99.3 / 80 & −21.8~±~10.2 / 99.1 / 60 \\
+Cascade routing {[}34{]} & 0.5~±~4.7 / 99.9 / 90 & −0.6~±~5.2 / 99.9 /
+100 \\
+Cascade routing {[}34{]} + cache & 23.0~±~4.2 / 99.8 / 100 & 1.4~±~2.7 /
+99.8 / 90 \\
 FRUGAL-AI & 35.4~±~5.9 / 99.1 / 50 & 17.1~±~6.6 / 98.9 / 40 \\
 \end{longtable}
 }
@@ -887,19 +959,23 @@ from the cache: on distinct queries it saves about the same as
 router-only and meets the target less often. With about 440 calibration
 queries, a 1\% tolerance is close to the sampling error of the quality
 estimate itself, and the simpler method, with one threshold to
-calibrate, is the more reliable one.
+calibrate, is the more reliable one. Cascade routing, tuned with the
+same margin, falls back to the large model at this target and saves
+nothing; with the cache it saves 23.0\% on the replay stream, almost all
+of it from cache hits.
 
 Table 5. Cost reduction (\%) at matched quality retained, distinct
 queries.
 
 {\def\LTcaptype{none} % do not increment counter
 \begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1818}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1250}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1250}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1364}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.3068}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1250}}@{}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1250}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0859}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0859}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.0938}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.1719}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2188}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 12\tabcolsep) * \real{0.2188}}@{}}
 \toprule\noalign{}
 \begin{minipage}[b]{\linewidth}\raggedright
 Quality retained
@@ -910,25 +986,34 @@ Router-only
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
 Cascade-only
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-FRUGAL-AI minus Router-only
+Cascade routing {[}34{]}
 \end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-p-value
+FRUGAL-AI minus Router-only (p)
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+FRUGAL-AI minus cascade routing (p)
 \end{minipage} \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-97\% & 69.5~±~4.2 & 41.0~±~5.7 & 31.1~±~8.2 & +28.5~±~7.8 & \textless{}
-0.0001 \\
-98\% & 53.5~±~9.1 & 32.4~±~4.8 & 12.0~±~5.9 & +21.1~±~11.7 & 0.003 \\
-98.5\% & 41.1~±~8.7 & 28.8~±~4.6 & 7.4~±~3.9 & +12.3~±~11.7 & 0.04 \\
-99\% & 28.9~±~5.8 & 24.7~±~4.7 & 4.8~±~2.7 & +4.2~±~9.8 & 0.36 \\
+97\% & 69.5~±~4.2 & 41.0~±~5.7 & 31.1~±~8.2 & 65.2~±~6.7 & +28.5~±~7.8
+(\textless{} 0.0001) & +4.3~±~7.6 (0.23) \\
+98\% & 53.5~±~9.1 & 32.4~±~4.8 & 12.0~±~5.9 & 50.1~±~7.0 & +21.1~±~11.7
+(0.003) & +3.4~±~12.3 (0.55) \\
+98.5\% & 41.1~±~8.7 & 28.8~±~4.6 & 7.4~±~3.9 & 41.5~±~7.9 & +12.3~±~11.7
+(0.04) & −0.4~±~10.7 (0.94) \\
+99\% & 28.9~±~5.8 & 24.7~±~4.7 & 4.8~±~2.7 & 29.4~±~7.9 & +4.2~±~9.8
+(0.36) & −0.5~±~11.4 (0.92) \\
 \end{longtable}
 }
 
 The advantage of the combined pipeline over routing alone is large at
 97\% to 98\% quality retained, still significant at 98.5\%, and gone at
-99\%.
+99\%. Against cascade routing there is no significant difference at any
+level: the differences lie between −0.5 and +4.3 points, with p ≥ 0.23.
+On distinct queries, therefore, FRUGAL-AI's router-and-cascade core
+performs like cascade routing, and its extra saving on the replay stream
+comes from the semantic cache, which cascade routing does not have.
 
 \includegraphics[width=0.92\linewidth,height=\textheight,keepaspectratio]{fig2_frontier.png}
 
@@ -1148,6 +1233,176 @@ the mid model. Overhead per request is 4.4 ms for the embedding and
 under 0.01 ms for the routing decision; a verifier call takes 3.7 s on
 average.
 
+Because the cache gain depends on the assumed repeat share, Table 10
+varies it for the four methods that can use repeats. Each share uses a
+fresh stream draw, so the 30\% row differs from Table 2 by sampling.
+
+Table 10. Cost reduction (\%) by share of repeated requests, replay
+stream, 98\% target. Quality retained (\%) in parentheses.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.0968}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1371}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1774}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2258}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1371}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.2258}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Repeat share
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Cache-only
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Cascade routing {[}34{]}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Cascade routing {[}34{]} + cache
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+FRUGAL-AI
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+FRUGAL-AI minus cascade routing + cache (points)
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+0\% & 0.8~±~0.6 (99.3) & 30.8~±~8.0 (99.0) & 20.0~±~11.0 (98.5) &
+33.6~±~7.2 (98.1) & +13.6 \\
+10\% & 12.0~±~4.9 (99.3) & 31.6~±~7.1 (99.2) & 29.3~±~9.7 (98.7) &
+41.2~±~7.6 (98.1) & +11.9 \\
+20\% & 23.5~±~8.0 (99.3) & 32.3~±~6.8 (99.4) & 39.0~±~8.5 (99.0) &
+49.0~±~8.4 (98.4) & +10.0 \\
+30\% & 34.5~±~9.5 (99.4) & 33.0~±~7.1 (99.5) & 48.0~±~7.8 (99.1) &
+56.4~±~8.3 (98.4) & +8.4 \\
+50\% & 53.3~±~8.6 (99.4) & 33.6~±~8.1 (99.4) & 63.2~±~6.6 (99.1) &
+69.3~±~6.8 (98.4) & +6.1 \\
+\end{longtable}
+}
+
+Adding a cache to cascade routing pays off once about 10\% to 20\% of
+requests repeat; below that, the tolerance reserved for wrong hits costs
+more than the hits save. FRUGAL-AI leads cascade routing + cache at
+every share, by 6 to 14 points, and the lead shrinks as repeats grow,
+because cache hits are equally cheap for both. Part of the lead is
+bought with quality: FRUGAL-AI runs 0.4 to 0.7 points closer to the
+target.
+
+\subsubsection{7.5 Why the target is
+missed}\label{why-the-target-is-missed}
+
+FRUGAL-AI meets the 98\% target in fewer seeds than the baselines (Table
+2 and Table 3). The cause is selection over many settings. Its routing
+core chooses among 163 calibrated settings, against 42 for router-only
+and 18 for cascade routing, and the setting that looks cheapest while
+passing on the calibration split tends to have passed by luck. On
+distinct queries, the chosen setting retains 99.03\% on the calibration
+split and 98.36\% on the test split, a drop of 0.67 points; for
+router-only the drop is 0.06 points and for cascade routing 0.14 points.
+
+Table 11. Effect of a wider calibration margin (in standard errors),
+98\% target. Each cell is cost reduction (\%) / seeds meeting target
+(\%).
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3889}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.1528}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2361}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2222}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Method
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Margin
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Replay stream
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Distinct queries
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cascade routing {[}34{]} & 1 & 29.4~±~9.0 / 90 & 30.8~±~8.0 / 90 \\
+Cascade routing {[}34{]} & 1.5 & 19.6~±~10.9 / 100 & 20.2~±~11.3 / 90 \\
+Cascade routing {[}34{]} & 2 & 7.2~±~9.3 / 100 & 6.8~±~10.0 / 100 \\
+Cascade routing {[}34{]} + cache & 1 & 40.5~±~8.4 / 80 & 20.1~±~11.0 /
+60 \\
+Cascade routing {[}34{]} + cache & 1.5 & 28.6~±~5.9 / 90 & 3.9~±~7.7 /
+80 \\
+Cascade routing {[}34{]} + cache & 2 & 25.6~±~5.2 / 100 & 0.3~±~5.4 /
+90 \\
+FRUGAL-AI & 1 & 50.8~±~5.2 / 70 & 33.8~±~7.0 / 50 \\
+FRUGAL-AI & 1.5 & 47.3~±~6.0 / 60 & 29.2~±~7.6 / 50 \\
+FRUGAL-AI & 2 & 43.5~±~6.1 / 80 & 24.3~±~7.0 / 70 \\
+\end{longtable}
+}
+
+A wider margin raises how often FRUGAL-AI meets the target, from 7 to 8
+of 10 seeds on the replay stream and from 5 to 7 on distinct queries,
+but does not fix it, because the margin does not account for how many
+settings were searched. It costs FRUGAL-AI less saving than it costs the
+baselines: at a margin of 2, FRUGAL-AI saves 43.5\% on the replay stream
+against 25.6\% for cascade routing + cache. We keep a margin of 1 as the
+main setting, because it was fixed before these results; a margin that
+grows with the number of candidate settings, or a larger calibration
+split, is the natural fix.
+
+\subsubsection{7.6 Statistical robustness}\label{statistical-robustness}
+
+Table 12. Query-level paired bootstrap, FRUGAL-AI minus each baseline,
+98\% target. Extra cost reduction in points, with 95\% CI and
+Holm-adjusted p over the five comparisons in each column.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2979}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2340}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1170}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2340}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1170}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+FRUGAL-AI vs.
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Replay stream
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Holm p
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Distinct queries
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Holm p
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Cache-only & +24.9 {[}+19.4, +31.7{]} & 0.001 & +32.8 {[}+24.9, +41.8{]}
+& 0.001 \\
+Router-only & +30.3 {[}+24.3, +35.8{]} & 0.001 & +12.7 {[}+6.3, +19.5{]}
+& 0.002 \\
+Cascade-only & +44.0 {[}+37.2, +49.4{]} & 0.001 & +27.1 {[}+22.5,
++31.1{]} & 0.001 \\
+Cascade routing {[}34{]} & +21.4 {[}+11.6, +31.7{]} & 0.001 & +3.0
+{[}−7.7, +14.9{]} & 0.50 \\
+Cascade routing {[}34{]} + cache & +10.4 {[}+4.6, +17.1{]} & 0.001 &
++13.7 {[}+5.2, +22.9{]} & 0.004 \\
+\end{longtable}
+}
+
+The bootstrap resamples queries but not tuning, so its intervals are
+narrower than the seed intervals in Table 2 and should be read together
+with them; the paired t-test across seeds against cascade routing +
+cache gives p = 0.04. Two qualifications apply. First, FRUGAL-AI retains
+significantly less quality than cascade routing (−0.7 points on the
+replay stream, 95\% CI −1.4 to 0.0; −0.9 on distinct queries, −1.6 to
+−0.2), so part of that saving is a quality trade, which is why Table 5
+compares at matched quality. Second, after Holm correction across the
+eight matched-quality tests of Table 5, the gain over router-only stays
+significant at 97\% and 98\% quality retained (adjusted p = 0.0001 and
+0.02) but not at 98.5\% (0.25), and no difference from cascade routing
+is significant.
+
 \subsection{8. Discussion, Limitations and
 Ethics}\label{discussion-limitations-and-ethics}
 
@@ -1160,11 +1415,14 @@ When it helps most. The combined pipeline pays off when a loss of 1.5 to
 when latency is not critical, since the verifier adds seconds to the
 slowest requests. When the target is within 1 point of the strongest
 model, or when each task type must meet the target on its own, a
-calibrated router is the safer choice. Three practical lessons follow.
-Tune against a margin, not the bare target, and report how often the
-target is met. Give the cache an explicit share of the error budget. Do
-not expect a small audit sample to steer quality online; recalibrate
-offline when traffic shifts.
+calibrated router is the safer choice. When traffic has few repeats,
+cascade routing alone gives the same saving at matched quality. With
+repeats, FRUGAL-AI beats cascade routing given the same cache by 6 to 14
+points, partly at lower quality. Three practical lessons follow. Tune
+against a margin, not the bare target, and report how often the target
+is met. Give the cache an explicit share of the error budget. Do not
+expect a small audit sample to steer quality online; recalibrate offline
+when traffic shifts.
 
 \textbf{Limitations.}
 
@@ -1200,7 +1458,8 @@ Limitations of this evaluation.
   Target not always met: with the margin, FRUGAL-AI meets the 98\%
   target in 7 of 10 seeds on the replay stream and in 5 of 10 on
   distinct queries. The margin makes meeting the target likely, not
-  certain.
+  certain; Section 7.5 traces the misses to selection over 163 settings,
+  which a margin of 2 reduces but does not remove.
 \item
   Tuning rule chosen after a first evaluation: see the disclosure in
   Section 6.5. A fresh test set would be needed to rule out any benefit
@@ -1211,6 +1470,8 @@ Limitations of this evaluation.
 \item
   Seeds are not independent model samples: each query was answered once
   per model, and seeds redraw only the split, the stream and the audits.
+  The query-level bootstrap of Section 7.6 covers query sampling but not
+  tuning.
 \item
   Small test sets: about 440 queries per split, and 40 to 200 per
   workload.
@@ -1218,8 +1479,10 @@ Limitations of this evaluation.
   Synthetic traffic: the 30\% repeat share and the drift scenario are
   assumptions, not measurements of real traffic.
 \item
-  Baselines: the 2026 systems named in Section 2 (ParetoBandit,
-  WISERouter, Cascade Routing, Conformal Cascade) were not implemented.
+  Baselines: of the 2024--2026 systems named in Section 2, only cascade
+  routing was implemented, by us from its description, so it may differ
+  from the authors' code; ParetoBandit, WISERouter and Conformal Cascade
+  were not implemented.
 \item
   Cost method: costs are tokens times list prices from command-line
   calls with a measured overhead subtracted, not metered API bills.
@@ -1247,8 +1510,13 @@ cascade together, against one quality target with a margin, cut LLM
 inference cost by 50.8\% at 98.5\% of the strongest model's quality on a
 stream with 30\% repeated requests. That is about twice the saving of
 routing or caching alone, and the advantage over routing holds at
-matched quality up to 98.5\% quality retained. At a 99\% target the
-combined pipeline is no better than a router. Prompt compression, an
+matched quality up to 98\% quality retained after correction for
+multiple tests. At a 99\% target the combined pipeline is no better than
+a router, and at matched quality on distinct queries it is tied with
+cascade routing. Given the same cache, cascade routing saves 40.5\%, and
+FRUGAL-AI saves 10.4 points more (bootstrap 95\% CI 4.6 to 17.1) at 0.3
+points lower quality, with a lead that shrinks from 14 to 6 points as
+the repeat share grows from 0\% to 50\%. Prompt compression, an
 audit-driven online quality controller and per-workload floors for the
 full pipeline did not pay off, while an online budget multiplier held
 spend under a traffic shift at a measurable cost in quality.
