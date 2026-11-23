@@ -93,7 +93,7 @@ replaced it. The first results and the simulator that produced them are kept in
 
 ## Citing
 
-See `CITATION.cff`, or use the "Cite this repository" button on GitHub. Version 1.0.0 is archived on Zenodo: https://doi.org/10.5281/zenodo.24202801 (all versions: https://doi.org/10.5281/zenodo.24202800).
+See `CITATION.cff`, or use the "Cite this repository" button on GitHub. Version 1.1.0, used for the paper as submitted, is archived on Zenodo: https://doi.org/10.5281/zenodo.24453820 (all versions: https://doi.org/10.5281/zenodo.24202800).
 
 ## Licence
 
