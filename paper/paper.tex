@@ -1364,7 +1364,10 @@ baselines: at a margin of 2, FRUGAL-AI saves 43.5\% on the replay stream
 against 25.6\% for cascade routing + cache. We keep a margin of 1 as the
 main setting, because it was fixed before these results; a margin that
 grows with the number of candidate settings, or a larger calibration
-split, is the natural fix.
+split, is the natural fix. The problem is not specific to our
+calibration rule: RouteNLP {[}38{]} reports that its conformal cascade
+thresholds, set for a 5\% violation rate, reach up to 8.1\% under
+distribution shift, and recommends monitoring in production.
 
 \subsubsection{7.6 Statistical robustness}\label{statistical-robustness}
 
