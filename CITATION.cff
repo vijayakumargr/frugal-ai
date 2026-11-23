@@ -7,9 +7,9 @@ authors:
     family-names: Gurusamy Raju
 repository-code: "https://github.com/vijayakumargr/frugal-ai"
 license: MIT
-date-released: "2026-11-13"
-version: "1.0.0"
-doi: "10.5281/zenodo.24202801"
+date-released: "2026-11-22"
+version: "1.1.0"
+doi: "10.5281/zenodo.24202800"
 preferred-citation:
   type: unpublished
   title: "FRUGAL-AI: A Cost-Aware Adaptive Framework for Reducing LLM Inference Cost"
