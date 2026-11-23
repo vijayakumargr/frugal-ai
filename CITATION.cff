@@ -5,6 +5,7 @@ type: software
 authors:
   - given-names: Vijayakumar
     family-names: Gurusamy Raju
+    orcid: "https://orcid.org/0009-0000-5024-0465"
 repository-code: "https://github.com/vijayakumargr/frugal-ai"
 license: MIT
 date-released: "2026-11-22"
@@ -16,6 +17,7 @@ preferred-citation:
   authors:
     - given-names: Vijayakumar
       family-names: Gurusamy Raju
+      orcid: "https://orcid.org/0009-0000-5024-0465"
   year: 2026
   notes: "Preprint"
   url: "https://github.com/vijayakumargr/frugal-ai"
