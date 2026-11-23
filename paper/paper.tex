@@ -239,16 +239,31 @@ primal-dual router with accuracy floors, and Panda et al.~{[}33{]} give
 a bandit router under a budget. Cascade routing {[}34{]} unifies routing
 and cascading in one decision rule. Conformal Cascade {[}35{]} and C3PO
 {[}36{]} give distribution-free guarantees for cascade deferral and
-cascade cost. These works control one component, the router or the
-cascade; none calibrates a semantic cache together with them, and none
-reports whether the calibrated quality target is met on held-out traffic
-for a full pipeline. We implement cascade routing {[}34{]} as a baseline
-(Section 6.3); the other systems are not implemented (Section 8).
+cascade cost. RouteNLP {[}38{]} is the closest system: it pairs a
+difficulty-aware router with conformally initialized cascade thresholds
+under per-task quality constraints, and adds distillation of cheaper
+models in a closed loop, with savings of 40\% to 85\% reported on a
+six-task benchmark and an enterprise pilot. UCCI {[}41{]} calibrates a
+two-tier cascade router's confidence with isotonic regression, and
+CRE-Router {[}42{]} clusters queries, routes each cluster under a
+latency budget and escalates on a quality estimator. CompCRC {[}39{]}
+splits one global risk budget across the stages of a cascade and
+certifies the allocation with a finite-sample guarantee, the principled
+counterpart of the heuristic margin used here. These works control the
+router, the cascade or both; none calibrates a semantic cache together
+with them, and none reports whether the calibrated quality target is met
+on held-out traffic for a full pipeline. We implement cascade routing
+{[}34{]} as a baseline (Section 6.3); the other systems are not
+implemented (Section 8).
 
 \textbf{Caching.} GPTCache {[}5{]} reuses answers for semantically
-similar queries using embedding search. Key-value cache reuse and paged
-attention {[}6{]} reduce serving cost inside the model server but do not
-avoid model calls.
+similar queries using embedding search. Cui et al.~{[}40{]} show that
+semantic caches run under an error budget typically leave most of it
+unspent, and spend it with an audited error estimate; FRUGAL-AI instead
+reserves a fixed share of its tolerance for the cache, which Table 3
+shows is wasted when traffic does not repeat. Key-value cache reuse and
+paged attention {[}6{]} reduce serving cost inside the model server but
+do not avoid model calls.
 
 \textbf{Prompt compression.} Selective Context {[}7{]} and LLMLingua
 {[}8{]}, {[}9{]} drop low-information tokens using a small language
@@ -308,6 +323,9 @@ no \\
 Cascade routing {[}34{]} & no & no & yes & yes & no & no \\
 Conformal Cascade {[}35{]} & no & no & no & yes & no & yes, for the
 cascade \\
+RouteNLP {[}38{]} & no & no & yes & yes & no & partial, per task \\
+CompCRC {[}39{]} & no & no & no & yes & no & yes, with a guarantee \\
+Cui et al.~{[}40{]} & yes & no & no & no & no & yes, for the cache \\
 FRUGAL-AI (ours) & yes & optional, unused & yes & yes & yes & yes,
 jointly, with a margin; met in 70\% of seeds \\
 \end{longtable}
@@ -1481,8 +1499,8 @@ Limitations of this evaluation.
 \item
   Baselines: of the 2024--2026 systems named in Section 2, only cascade
   routing was implemented, by us from its description, so it may differ
-  from the authors' code; ParetoBandit, WISERouter and Conformal Cascade
-  were not implemented.
+  from the authors' code; ParetoBandit, WISERouter, Conformal Cascade,
+  RouteNLP, CompCRC and UCCI were not implemented.
 \item
   Cost method: costs are tokens times list prices from command-line
   calls with a measured overhead subtracted, not metered API bills.
@@ -1699,6 +1717,23 @@ Zenodo, https://doi.org/10.5281/zenodo.24202801.
   Y. Moslem and J. D. Kelleher, ``Dynamic model routing and cascading
   for efficient LLM inference: A survey,'' Transactions on Machine
   Learning Research, 2026.
+\item
+  D. Guo, J. Wu and S. M. Yiu, ``RouteNLP: Closed-loop LLM routing with
+  conformal cascading and distillation co-optimization,'' in Proc. ACL
+  Industry Track, 2026, arXiv:2604.23577.
+\item
+  Y. Sun, J. Wang, H. Liu, Z. Huang, T. Pei and S. Long, ``Compositional
+  conformal risk control for multi-stage LLM cascades,''
+  arXiv:2611.11114, 2026.
+\item
+  H. Cui, Q. Ma and Z. Tang, ``Semantic caches for LLM web services
+  leave their error budget unspent,'' arXiv:2611.02498, 2026.
+\item
+  V. Kotte, ``UCCI: Calibrated uncertainty for cost-optimal LLM cascade
+  routing,'' arXiv:2605.18796, 2026.
+\item
+  Y. Moslem et al., ``Cluster, route, escalate: Cascaded framework for
+  cost-aware LLM serving,'' arXiv:2606.27457, 2026.
 \end{enumerate}
 
 \end{document}
